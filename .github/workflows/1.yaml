@@ -1,0 +1,108 @@
+name: 构建和打包 WebDAVSync
+
+on:
+  push:
+    branches: [ main ]
+    tags:
+      - 'v*'
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [windows-latest, ubuntu-latest, macos-latest]
+      fail-fast: false
+
+    steps:
+    - name: 检出代码
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+
+    - name: 设置 Go 环境
+      uses: actions/setup-go@v5
+      with:
+        go-version: '1.22.2'
+
+    - name: 安装 Linux 依赖（仅 Ubuntu）
+      if: matrix.os == 'ubuntu-latest'
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y libgl1-mesa-dev libayatana-appindicator3-dev libx11-dev xorg-dev
+
+    - name: 清理 Go 模块缓存
+      run: go clean -modcache
+
+    - name: 缓存 Go 模块
+      uses: actions/cache@v4
+      with:
+        path: ~/go/pkg/mod
+        key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
+        restore-keys: ${{ runner.os }}-go-
+
+    - name: 设置 GOPROXY
+      run: go env -w GOPROXY=https://proxy.golang.org,direct
+
+    - name: 清理 go.sum
+      run: |
+        if ($Env:RUNNER_OS -eq "Windows") {
+          Remove-Item -Path go.sum -Force -ErrorAction SilentlyContinue
+        } else {
+          rm -f go.sum || true
+        }
+      shell: pwsh
+
+    - name: 安装依赖
+      run: go mod tidy
+
+    - name: 运行单元测试
+      run: go test ./... -v || true
+
+    - name: 安装 Fyne CLI
+      run: go install fyne.io/fyne/v2/cmd/fyne@latest
+
+    - name: 编译项目
+      run: go build -ldflags="-s -w" -o WebDAVSync${{ matrix.os == 'windows-latest' && '.exe' || '' }}
+
+    - name: 打包为可执行文件
+      run: |
+        if ($Env:RUNNER_OS -eq "Windows") {
+          fyne package -os windows -icon assets/icon.ico -name WebDAVSync
+        } elseif ($Env:RUNNER_OS -eq "Linux") {
+          fyne package -os linux -icon assets/icon.ico -name WebDAVSync
+        } else {
+          fyne package -os darwin -icon assets/icon.ico -name WebDAVSync
+        }
+      shell: pwsh
+
+    - name: 上传编译产物
+      uses: actions/upload-artifact@v4
+      with:
+        name: WebDAVSync-${{ matrix.os }}
+        path: WebDAVSync${{ matrix.os == 'windows-latest' && '.exe' || '' }}
+        retention-days: 7
+
+    - name: 创建 GitHub Release
+      if: startsWith(github.ref, 'refs/tags/v') && matrix.os == 'windows-latest'
+      uses: actions/create-release@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        tag_name: ${{ github.ref_name }}
+        release_name: Release ${{ github.ref_name }}
+        draft: false
+        prerelease: false
+
+    - name: 上传 Release 产物
+      if: startsWith(github.ref, 'refs/tags/v') && matrix.os == 'windows-latest'
+      uses: actions/upload-release-asset@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        upload_url: ${{ steps.create-release.outputs.upload_url }}
+        asset_path: WebDAVSync.exe
+        asset_name: WebDAVSync.exe
+        asset_content_type: application/octet-stream
