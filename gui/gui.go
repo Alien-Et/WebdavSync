@@ -36,7 +36,7 @@ func Run(eng *engine.SyncEngine, db *db.DB) {
         showConfigDialog(w, eng, db)
     })
 
-    // 暂停/恢复按钮，确保定义在引用前
+    // 暂停/恢复按钮
     pauseBtn := widget.NewButton("暂停同步", func() {
         if eng.IsPaused() {
             eng.Resume()
