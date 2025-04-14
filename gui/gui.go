@@ -23,7 +23,7 @@ func Run(eng *engine.SyncEngine, db *db.DB) {
     w.Resize(fyne.NewSize(800, 600))
 
     // 设置图标
-    w.SetIcon(theme.FileImageIcon()) // 临时使用默认图标
+    w.SetIcon(theme.FileImageIcon())
 
     // 主界面组件
     statusLabel := widget.NewLabel("状态：空闲")
@@ -36,7 +36,7 @@ func Run(eng *engine.SyncEngine, db *db.DB) {
         showConfigDialog(w, eng, db)
     })
 
-    // 暂停/恢复按钮
+    // 暂停/恢复按钮，优先定义
     pauseBtn := widget.NewButton("暂停同步", func() {
         if eng.IsPaused() {
             eng.Resume()
