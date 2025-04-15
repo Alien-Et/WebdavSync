@@ -197,5 +197,3 @@ func showConflictDialog(w fyne.Window, conflict models.Conflict, logText *widget
 
     dialog.ShowCustom("解决冲突", "关闭", content, w)
 }
-
-// 修复 pauseBtn 定义 - 2025-04-15
