@@ -17,12 +17,9 @@ import (
 
 // Run 启动 GUI 和系统托盘
 func Run(eng *engine.SyncEngine, db *db.DB) {
-    // 初始化 Fyne 应用
     a := app.NewWithID("com.webdavsync")
     w := a.NewWindow("WebDAV Sync")
     w.Resize(fyne.NewSize(800, 600))
-
-    // 设置图标
     w.SetIcon(theme.FileImageIcon())
 
     // 主界面组件
@@ -36,7 +33,7 @@ func Run(eng *engine.SyncEngine, db *db.DB) {
         showConfigDialog(w, eng, db)
     })
 
-    // 暂停/恢复按钮，优先定义
+    // 暂停/恢复按钮
     pauseBtn := widget.NewButton("暂停同步", func() {
         if eng.IsPaused() {
             eng.Resume()
@@ -78,7 +75,6 @@ func Run(eng *engine.SyncEngine, db *db.DB) {
         }
     }()
 
-    // 显示窗口
     w.ShowAndRun()
 }
 
