@@ -33,7 +33,7 @@ func Run(eng *engine.SyncEngine, db *db.DB) {
         showConfigDialog(w, eng, db)
     })
 
-    // 暂停/恢复按钮
+    // 暂停/恢复按钮，确保定义在 SetText 前
     pauseBtn := widget.NewButton("暂停同步", func() {
         if eng.IsPaused() {
             eng.Resume()
@@ -197,3 +197,5 @@ func showConflictDialog(w fyne.Window, conflict models.Conflict, logText *widget
 
     dialog.ShowCustom("解决冲突", "关闭", content, w)
 }
+
+// 修复 pauseBtn 定义 - 2025-04-15
