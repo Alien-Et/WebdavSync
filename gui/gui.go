@@ -28,13 +28,14 @@ func Run(eng *engine.SyncEngine, db *db.DB) {
     logText.SetPlaceHolder("同步日志...")
     logText.Disable()
 
-    // 配置按钮
     configBtn := widget.NewButton("配置", func() {
         showConfigDialog(w, eng, db)
     })
 
-    // 暂停/恢复按钮
-    pauseBtn := widget.NewButton("暂停同步", func() {
+    // 提前定义 pauseBtn 以便传入托盘函数使用
+    var pauseBtn *widget.Button
+
+    pauseBtn = widget.NewButton("暂停同步", func() {
         if eng.IsPaused() {
             eng.Resume()
             pauseBtn.SetText("暂停同步")
@@ -56,10 +57,8 @@ func Run(eng *engine.SyncEngine, db *db.DB) {
     )
     w.SetContent(content)
 
-    // 系统托盘（用闭包捕获 pauseBtn）
-    go func() {
-        systray.Run(setupTray(a, eng, w, statusLabel, pauseBtn), nil)
-    }()
+    // 系统托盘
+    setupTray(a, eng, w, statusLabel, pauseBtn)
 
     // 启动同步引擎
     ctx, cancel := context.WithCancel(context.Background())
@@ -80,9 +79,9 @@ func Run(eng *engine.SyncEngine, db *db.DB) {
     w.ShowAndRun()
 }
 
-// setupTray 返回一个设置系统托盘的函数（闭包），允许捕获外部变量
-func setupTray(a fyne.App, eng *engine.SyncEngine, w fyne.Window, statusLabel *widget.Label, pauseBtn *widget.Button) func() {
-    return func() {
+// setupTray 设置系统托盘
+func setupTray(a fyne.App, eng *engine.SyncEngine, w fyne.Window, statusLabel *widget.Label, pauseBtn *widget.Button) {
+    systray.Run(func() {
         systray.SetIcon(getTrayIcon())
         systray.SetTitle("WebDAV Sync")
         systray.SetTooltip("WebDAV 同步工具")
@@ -113,10 +112,10 @@ func setupTray(a fyne.App, eng *engine.SyncEngine, w fyne.Window, statusLabel *w
                 }
             }
         }()
-    }
+    }, nil)
 }
 
-// getTrayIcon 返回托盘图标数据（可替换为实际图标字节）
+// getTrayIcon 返回托盘图标数据
 func getTrayIcon() []byte {
     return []byte{}
 }
